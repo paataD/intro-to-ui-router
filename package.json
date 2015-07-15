@@ -1,0 +1,23 @@
+{
+  "name": "intro-to-ui-router",
+  "version": "1.0.0",
+  "description": "angular-starter ====",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jasonshark/angular-starter"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jasonshark/angular-starter/issues"
+  },
+  "homepage": "https://github.com/jasonshark/angular-starter",
+  "dependencies": {
+    "body-parser": "^1.13.2",
+    "express": "^4.13.1"
+  }
+}
