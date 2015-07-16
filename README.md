@@ -156,10 +156,44 @@ app.controller('PostCtrl', function($scope, post, $state){
 });
 ```
 
+Now we can see an individual post and easily navigate back to the home state. The url is persistent, meaning you can bookmark it and refresh the page and see the same thing. We get that for free with ui-router, where it takes extra code in a framework like Backbone.
 
+#### Nested views
 
--params property
--views property (+ui-view)
--resolve property
--abstract states
--highlighted navigation bar with ng-class
+On the home page I want to show a preview the description of the post when I click "preview". To do that we'll use a [nested view](https://github.com/angular-ui/ui-router/wiki/Nested-States-%26-Nested-Views) [without changing the url](http://stackoverflow.com/a/28248244/2031033).
+
+We'll define a child state:
+
+```
+.state('home.preview', {
+	controller: function($scope, $stateParams){
+		$scope.post = $stateParams.post;
+	},
+	params: {
+		post: 'defaultValue'
+	},
+	template: '{{post.description}}'
+})
+```
+
+Then update main.html:
+
+```
+<h1>All posts</h1>
+<div class='col-sm-6'>
+	<ul>
+		<li ng-repeat='post in posts'>
+			<a ui-sref="viewPost({id: post.id})">{{post.title}}</a>
+			<small ui-sref='home.preview({post: post})'>preview</small>
+		</li>
+	</ul>
+</div>
+<div class='col-sm-6'>
+	<!-- show a preview of the post here -->
+	<div ui-view></div>
+</div>
+```
+
+Now when you click on preview you'll see the post's description. There are some more tricks with ui-router like using [abstract states](https://github.com/angular-ui/ui-router/wiki/Nested-States-%26-Nested-Views#abstract-states) and declaring [multiple named views](https://github.com/angular-ui/ui-router/wiki/Multiple-Named-Views). This is an introduction to ui router and will serve you moving forward. Happy coding!
+
+![happy happy joy joy](http://media2.giphy.com/media/33UbGsRWIZhkc/giphy.gif)

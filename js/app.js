@@ -20,6 +20,15 @@ app.config(function($stateProvider, $urlRouterProvider){
 	      	}
 	      }
 	    })
+	    .state('home.preview', {
+	    	controller: function($scope, $stateParams){
+	    		$scope.post = $stateParams.post;
+	    	},
+	    	params: {
+	    		post: 'defaultValue'
+	    	},
+	    	template: '{{post.description}}'
+	    })
 	    .state('viewPost', {
 			url: '/posts/:id',
 			templateUrl: 'templates/post.html',
