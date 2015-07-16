@@ -1,6 +1,8 @@
 <h1>All posts</h1>
 <div class='col-sm-12'>
 	<ul>
-		<li><a ng-href='/posts/{{post.title}}'>{{post.title}}</a></li>
+		<li ng-repeat='post in posts'>
+			<a ui-sref="viewPost({id: post.id})">{{post.title}}</a>
+		</li>
 	</ul>
 </div>

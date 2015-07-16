@@ -11,11 +11,26 @@ app.config(function($stateProvider, $urlRouterProvider){
 	    .state('home', {
 	      url: "/",
 	      templateUrl: "templates/main.html",
-	      controller: 'MainCtrl'
+	      controller: 'MainCtrl',
+	      resolve: {
+	      	posts: function($http){
+	      		return $http.get('/api/posts').then(function(posts){
+					return posts.data;
+				});
+	      	}
+	      }
 	    })
 	    .state('viewPost', {
-			url: '/posts/:title',
+			url: '/posts/:id',
 			templateUrl: 'templates/post.html',
-			controller: 'PostCtrl'
+			controller: 'PostCtrl',
+			resolve: {
+				post: function($http, $stateParams){
+					console.log($stateParams);
+					return $http.get('/api/posts/' + $stateParams.id).then(function(post){
+						return post.data;
+					});
+				}
+			}
 		})
 });

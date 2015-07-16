@@ -17,85 +17,147 @@ app.config(function($stateProvider, $urlRouterProvider){
 	      url: "/",
 	      templateUrl: "templates/main.html",
 	      controller: 'MainCtrl'
-	    })
+	    });
 });
 ```
 
 `templates/main.html` gets rendered in `<div ui-view></div>` of `index.html`.
 
-This is a pretty simple implementation of routing with angular.js but it has worked for me. Sometimes I added dynamic states:
+This is a pretty simple implementation of routing with angular.js but it has worked for me. 
+
+To show off dynamic routing and some more advanced features of ui-router I fired up an express server in `server.js` that serves index.html and a posts API. Sometimes it in necessary to add dynamic states:
+
+For a really basic implementation, getting the posts:
 
 ```
-.state('viewPost', {
-	url: '/posts/:title',
-	templateUrl: 'templates/post.html',
-	controller: 'PostCtrl'
-})
-```
-
-As expected, this will route to post with the post title. To access the post title (and fetch the appropriate post from the server) we can inject `$stateParams` to the controller.
-
-```
-app.controller('PostCtrl', function($scope, $stateParams, BASE_URL){
-	var post_title = $stateParams.title;
-
-	$http.get(BASE_URL + '/api/' + post_title).then(function(postData){
-		$scope.post = postData.data;
+app.controller('MainCtrl', function($scope, $http){
+	$http.get('/api/posts').then(function(posts){
+		
+		$scope.posts = posts.data;
+		console.log($scope.posts);
 	})
 });
 ```
 
-Once the controller is instantialized it will fire a request to the appropriate (made up) endpoint. Once that request is returned with data the data will populate the `post` property of the scope. We access that in the html template with curly braces: `{{post}}`.
+Once the controller is instantialized it will fire a request to the appropriate endpoint. Once that request is returned with data the data will populate the `posts` array on the scope.
 
-The issue with this is that there could be a small delay from when the page loads to when the page is actually populated from the server.
+In `templates/main.html` we render the posts to the screen with a simple `ng-repeat`.
+
+```
+<h1>All posts</h1>
+<div class='col-sm-12'>
+	<ul>
+		<li ng-repeat='post in posts'>
+			<a ng-href='/#/posts/{{post._id}}'>{{post.title}}</a>
+		</li>
+	</ul>
+</div>
+```
+
+The issue with this, having the call in the controller, is that there will be a small delay from when the page loads to when the page is actually populated with data from the server. ui-router has a solution.
 
 From the [docs](https://github.com/angular-ui/ui-router/wiki):
 
 > You can use resolve to provide your controller with content or data that is custom to the state. If any of these dependencies are promises, they will be resolved and converted to a value before the controller is instantiated and the `$stateChangeSuccess` event is fired.
 
-This means the data will be ready before the state is changed into or the template loads. The data and template will load at the same time. Refactoring our code, we could do this:
+Using the resolve property in our state:
 
 ```
-.state('viewPost', {
-
-	url: '/posts/:title',
-	templateUrl: 'templates/post.html',
-	resolve: {
-		post: function($http){
-			return $http.get(BASE_URL + '/api/' + post_title);
-		}
-	},
-	controller: 'PostCtrl'
+.state('home', {
+  url: "/",
+  templateUrl: "templates/main.html",
+  controller: 'MainCtrl',
+  resolve: {
+  	posts: function($http){
+  		return $http.get('/api/posts').then(function(posts){
+			return posts.data;
+		});
+  	}
+  }
 })
 ```
 
-Resolve makes our controller simpler:
+Resolve makes our controller more simple:
 
 ```
-app.controller('PostCtrl', function($scope, post){
-	$scope.post = post.data;
+app.controller('MainCtrl', function($scope, posts){
+	$scope.posts = posts;
 });
 ```
 
-The resolve function in the state definition, like most things in angular, is injectable. So we used `$http` in there but it could easily have been something like the `Posts` service (not defined above). The user will only be redirected after all promises in the resolve object have finished.
+The advantage of this approach is that `posts` is gauranteed to be available when the controller for the route is instantialized.
 
-What about navigating to a specific post? We can inject angular expressions into url parameters using [ng-href](https://docs.angularjs.org/api/ng/directive/ngHref). So in main.html we'll render all of our posts and provide each one with the appropriate link.
+
+#### Show an individual post
+
+So we have a lists of posts. Each post uses `ng-href` so that we can use `{{}}` in the path string passed in (`{{post._id}}). Let's define the route for an individual post:
 
 ```
-<ul>
-	<li><a ng-href='/posts/{{post.title}}'>{{post.title}}</a></li>
-</ul>
+.state('viewPost', {
+	url: '/posts/:id',
+	templateUrl: 'templates/post.html',
+	controller: 'PostCtrl',
+	resolve: {
+		post: function($http, $stateParams){
+			console.log($stateParams);
+			return $http.get('/api/posts/' + $stateParams.id).then(function(post){
+				return post.data;
+			});
+		}
+	}
+})
 ```
 
-This will work fine. An alternative to this approach is to use the states that we define in the ui-router configuration. We want to navigate to the `'viewPost'` state and pass in the post title as a parameter. For that we can use `ui-sref`.
+The post controller is light again:
 
-To navigate to a normal state without parameters use `$state.go('home');` in your javascript and `ui-sref='home'` for html anchor tags. You could combine html and javasctipt and do something wild and crazy like `<p ng-click="$state.go('home')">Go home</p>`.
+```
+app.controller('PostCtrl', function($scope, post){
+	$scope.post = post;
+});
+```
 
-`ui-sref="{post: 'post title goes here'}"
+And the view is simple:
 
-[ui-sref docs](http://angular-ui.github.io/ui-router/site/#/api/ui.router.state.directive:ui-sref)
+```
+<h1>{{post.title}}</h1>
 
--simple node server to send posts data
+<p>{{post.description}}</p>
+```
+
+
+That `/#/` for the ng-href is ugly. ui-router uses states, so we can use `ui-sref` instead. ui-sref directs to a state instead of a route. Our post list becomes:
+
+```
+<h1>All posts</h1>
+<div class='col-sm-12'>
+	<ul>
+		<li ng-repeat='post in posts'>
+			<a ui-sref="viewPost({id: post.id})">{{post.title}}</a>
+		</li>
+	</ul>
+</div>
+```
+
+To navigate to states in the javascript you can use `$state.go('state_name');`
+
+For instance a simple back button on the post page:
+
+`<div class='btn btn-primary' ng-click='goBack()'>< Back</div>`
+
+and the method is defined in `PostCtrl`:
+
+```
+app.controller('PostCtrl', function($scope, post, $state){
+	$scope.post = post;
+
+	$scope.goBack = function(){
+		$state.go('home');
+	};
+});
+```
+
+
+
 -params property
 -views property (+ui-view)
 -resolve property
